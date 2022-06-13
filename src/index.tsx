@@ -3,13 +3,18 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { Neo4jProvider, createDriver } from 'use-neo4j'
+
+const driver = createDriver('neo4j', 'localhost', 7687, 'neo4j', 'admin')
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
   <React.StrictMode>
-    <App />
+    <Neo4jProvider driver={driver}>
+      <App />
+    </Neo4jProvider>
   </React.StrictMode>
 );
 
