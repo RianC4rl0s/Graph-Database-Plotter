@@ -29,6 +29,10 @@ const GraphQuery = () => {
     //N RODA
     // const [createRellQuery,setCreateRellQuery] = useState("match (p:Person) where id(p) = 0 match (p2:Person) where id(p2) = 0 create (p)-[r:meet]->(p2) return p")
     const [createRellQuery,setCreateRellQuery] = useState("match (p) where id(p) = 0 return p")
+    const createRellQueryTest = "match (p:Person) where id(p) = $n1 match (p2:Person) where id(p2) = $n2 create (p)-[r:meet]->(p2) return p"
+    const [relCreate, realCreateResponse] = useLazyWriteCypher(
+        createRellQueryTest
+    )
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     //const [createRelationship, createRelationshipResponse] = useLazyWriteCypher(
     const createRelationshipResponse = useWriteCypher(
@@ -254,24 +258,7 @@ const GraphQuery = () => {
                         console.log(relObj1?.data);
                         console.log(relObj2?.data);
 
-                        // await createRelationship()
-                        //     .then(res2 => {
-                        //         console.log("doi")
-                        //         //res2 && console.log(res2.records[0].get('p').properties.name)
-                        //         //res2 && console.log(res2.records[0].get('r').type)
-                        //         //res2 && console.log(res2.records[0].get('p2').properties.name)
-                        //         test.run();
-                        //         getRell.run();
-                               
-
-                                
-                               
-                        //         setRellType("")
-                        //     })
-                        //     .catch(e => {
-                        //         throw e
-                        //     })
-                        //window.location.reload();
+                       
                     }}
                 >Criar Relacionamento</button>
                 <button onClick={() => window.location.reload()}>Recarregar Tabela!</button>
