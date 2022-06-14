@@ -32,6 +32,10 @@ const GraphQuery = () => {
     const [createJob, createJobResponse] = useLazyWriteCypher(
         createJobQuery
     )
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [deleteAllNodes, deleteResponse] = useLazyWriteCypher(
+        "MATCH (n) DETACH  DELETE n"
+    )
     //N RODA
     const [createRellQuery, setCreateRellQuery] = useState("match (p) where id(p) = 0 return p")
 
@@ -39,7 +43,7 @@ const GraphQuery = () => {
     const createRelationshipResponse = useWriteCypher(
         createRellQuery
     )
-   
+
     const [createRellQueryJob, setCreateRellQueryJob] = useState("match (p) where id(p) = 0 return p")
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -222,8 +226,10 @@ const GraphQuery = () => {
 
     return (
         <div style={{ margin: "10px 20px 10px 20px" }}>
+            <div style={{width:"100%", textAlign:"center"}}>
+                <h1>NEO4J ReactJs</h1>
 
-
+            </div>
             <div style={{ display: "inline-block", width: "25%", float: "left" }}>
                 <h4>Criar Pessoa</h4>
                 <label>Nome</label>
@@ -318,6 +324,17 @@ const GraphQuery = () => {
                 >Criar Relacionamento "Trabalha"</button>
                 <hr />
                 <button onClick={() => window.location.reload()}>Recarregar Tabela!</button>
+                <button style={{ backgroundColor: "#FF6655", color: "white", border: "none", }} onClick={(e) => {
+                    deleteAllNodes()
+                        .then(res => {
+                            //res && setConfirmation(`Node updated at ${res.records[0].get('updatedAt').toString()}`)
+                            //res && console.log(res.records[0].get('p').properties.name)
+                            test.run();
+                            window.location.reload()
+                        })
+                        .catch(e => console.log(e))
+                }
+                }>Apagar Tudo do banco</button>
             </div>
             <div style={{ display: "inline-block", width: "70%", float: "right" }}>
                 {Graph}
