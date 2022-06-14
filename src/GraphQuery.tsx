@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useLazyWriteCypher, useReadCypher } from "use-neo4j"
 import CytoscapeComponent from 'react-cytoscapejs';
 import { Core } from "cytoscape";
 
 interface Node {
-    data: { id: string, label: string }/*, position: { x: number, y: number }*/
+    data: { id: string, label: string, type: string }/*, position: { x: number, y: number }*/
 }
 interface Edge {
     data: { source: string, target: string, label: string }
@@ -21,94 +21,81 @@ const GraphQuery = () => {
 
     const [personName, setPersonName] = useState("");
     const createPersonQuery = "CREATE (p:Person {name: $name}) RETURN p"
+    const createRellQuery = "match (p:Person) where id(p) = $id1 match (p2:Person) where id(p2) = $id2 create (p)-[r:$rellType]->(p2) return p,r,p2"
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [createPerson, createPersonResponse] = useLazyWriteCypher(
         createPersonQuery
+    )
+    const [createRelationship, createRelationshipResponse] =useLazyWriteCypher(
+        createRellQuery
     )
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [nodes, setNodes] = useState<Array<Node>>(new Array<Node>());
     const [edges, setEdges] = useState<Array<Edge>>(new Array<Edge>());
 
+    const [selectedNode, setSelectedNode] = useState<Node>();
 
+    const [relObj1, setRelobj1] = useState<Node>()
+    const [relObj2, setRelobj2] = useState<Node>()
+    const [rellType,setRellType] = useState<string>("")
 
+    
+    
     useEffect(() => {
         if (test.records) {
             let ns: Array<Node> = new Array<Node>();
-            //console.log(test.records.length)
-            //console.log(test.records)
+           
             for (let i = 0; i < test.records.length; i++) {
-                let n: Node = { data: { id: test.records[i].get('m').identity.low, label: test.records[i].get('m').properties.name },/* position: { x: i * 100 + 100, y: 100 } */ }
-                // console.log("rec" + test.records[i].get('m'))
-                //console.log(" n:" + n)
+                let n: Node = { data: { id: test.records[i].get('m').identity.low, label: test.records[i].get('m').properties.name, type: test.records[i].get('m').labels[0] },/* position: { x: i * 100 + 100, y: 100 } */ }
+               
                 ns = [...ns, n];
 
             }
-
-            // console.log(nodes)
             setNodes(ns)
         }
-        //console.log(first?.get('m'))
-        // setNodes([...nodes, n])
-        //console.log(test.records)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         if (getRell.records) {
-            //console.log(getRell.result)
+           
             let ns: Array<Edge> = new Array<Edge>();
             for (let i = 0; i < getRell.records.length; i++) {
                 let n: Edge = { data: { source: getRell.records[i].get('r').start.low, target: getRell.records[i].get('r').end.low, label: getRell.records[i].get('r').type } }
-                // console.log("rec" + test.records[i].get('m'))
-                //console.log(" n:" + n)
+               
                 ns = [...ns, n];
-                //console.log(ns)
             }
             setEdges(ns);
-            // console.log(edges)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [test.loading, getRell.loading])
 
-    // .on('click', 'node', (e: any) => {
-    //     const node = e.target;
-    //     const ref = node.popperRef();
+    const [usedCy,setUsedCy] =  useState<Core>();
 
-    //   });
-    //const cy : Cy.core = null
-    //const [cyi, setCyi] = useState<Core>()
-    const cyRef = useRef<Core>(null);
+    //const cyRef = React.useRef<Core>(null);
     useEffect(() => {
-        if (cyRef.current) {
-          /*cyRef.current.on("tap", "node", (e) => {
-            console.log("AAAAAA");
-          });*/
-          cyRef.current.on('click', 'node', (e: any) => {
-            const node = e.target;
-            //const ref = node.popperRef();
-            console.log(node._private.data)
-            //alert("lilly ' (" + node.data("name") + ")");
-        });
+  
+        if (usedCy) {
+            
+            usedCy.on('click', 'node', (e: any) => {
+                const node = e.target;
+                console.log(node._private.data)
+                
+                let n: Node = { data: { id: node._private.data.label.id, label: node._private.data.label, type: node._private.data.type },/* position: { x: i * 100 + 100, y: 100 } */ }
+                setSelectedNode(n)
+
+            });
         }
-      },[]);
-    //cyi && cyi.on('click', 'node', (e: any) => {
-        //const node = e.target;
-        //const ref = node.popperRef();
-        //console.log(node._private.data)
-        //alert("lilly ' (" + node.data("name") + ")");
-   // });
+    }, [usedCy]);
+  
 
     return (
         <div>
-            {/* {loading &&
-                <div>Carregando</div>
-            } */}
-            { }
-            {/* {first?.get('m').properties.name} */}
+
+
             <div className="form">
                 <h4>Criar Pessoa</h4>
                 <label>Nome</label>
                 <input type="text" value={personName} onChange={(e) => {
                     setPersonName(e.target.value)
-                }} /><br />
+                }} />
                 <button onClick={(e) => {
                     e.preventDefault()
                     createPerson({ name: personName })
@@ -118,14 +105,46 @@ const GraphQuery = () => {
                             test.run();
                             setPersonName("")
                         })
-                        .catch(/*e => setError(e)*/)
+                        .catch(e => console.log(e))
                 }}>enviar</button>
+
+                <h4>Criar relação</h4>
+                Pessoa Selecionada : {selectedNode && selectedNode.data.label} <br />
+                <button onClick={
+                    (e) => {
+                        setRelobj1(selectedNode)
+                    }
+                }>Colocar na query como nó 1</button>
+                <button onClick={
+                    (e) => {
+                        setRelobj2(selectedNode)
+                    }
+                }>Colocar na query como nó 2</button><br />
+                <hr/>
+                &#40;p:{relObj1 && relObj1.data.label}&#41;- &#91;
+                r:<input type="text" value={rellType} onChange={(e)=>setRellType(e.target.value)}></input>
+                &#93; -&gt; &#40;p2:{relObj2 && relObj2.data.label}&#41;<br/>
+                <hr/>
+                <button
+                onClick={(e) => {
+                    e.preventDefault()
+                    createRelationship({ id1: relObj1?.data.id,id2:relObj2?.data.id,rellType:rellType })
+                        .then(res => {
+                            //res && setConfirmation(`Node updated at ${res.records[0].get('updatedAt').toString()}`)
+                            res && console.log(res.records[0].get('r').type)
+                            test.run();
+                            
+                        })
+                        .catch(e => console.log(e))
+                }}
+                >Criar Relacionamento</button>
             </div>
             <CytoscapeComponent
                 cy={(cy) => {
                     /* this.cy = cy*/
                     //setCyi(cy);
-                    cyRef.current = cy
+                    //cyRef.current = cy
+                    setUsedCy(cy)
                 }}
                 elements={
                     CytoscapeComponent.normalizeElements({
@@ -136,34 +155,13 @@ const GraphQuery = () => {
                 style={{ margin: "10px 20px 10px 20px", height: '600px', boxShadow: "2px 2px 6px 4px #ddd", backgroundColor: "#dfdfdf" }}
                 pan={{ x: 200, y: 200 }}
 
-                // layout={{
-                //     name: 'circle',
-                //     fit: true,
-                //     padding: 30,
-                //     boundingBox: undefined,
-                //     avoidOverlap: true,
-                //     nodeDimensionsIncludeLabels: false,
-                //     spacingFactor: undefined,
-                //     radius: undefined,
-                //     startAngle: 3 / 2 * Math.PI,
-                //     sweep: undefined,
-                //     clockwise: true,
-                //     sort: undefined,
-                //     animate: true,
-                //     animationDuration: 1000,
-                //     animationEasing: undefined,
-                //     animateFilter: function (node, i) { return true; }, // a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts
-                //     ready: undefined,
-                //     stop: undefined,
-                //     transform: function (node, position) { return position; }
 
-                // }}
                 layout={{
                     name: 'cose',
 
                     // Called on `layoutready`
-                    //ready: function () { },
-                    //stop: function () { },
+                    ready: function () { },
+                    stop: function () { },
 
                     // Whether to animate while running the layout
                     // true : Animate continuously as the layout is running
@@ -191,7 +189,7 @@ const GraphQuery = () => {
                     initialTemp: 1000,
                     coolingFactor: 0.95,
                     minTemp: 1.0
-                    
+
                 }}
                 stylesheet={[
                     {
@@ -203,8 +201,8 @@ const GraphQuery = () => {
                             label: "data(label)",
                             "text-valign": "center",
                             "text-halign": "center",
-                            //"text-outline-color": "#555",
-                            //"text-outline-width": "2px",
+                            "text-outline-color": "#555",
+                            "text-outline-width": "1px",
                             "overlay-padding": "6px",
                             //"z-index": "10"
                             color: "white"
@@ -220,16 +218,8 @@ const GraphQuery = () => {
                             //"text-outline-color": "#77828C"
                         }
                     },
-                    //   {
-                    //     selector: "label",
-                    //     style: {
-                    //       color: "white",
-                    //       //width: 30,
-                    //       //height: 30,
-                    //       //fontSize: 30
-                    //       // shape: "rectangle"
-                    //     }
-                    //   },
+
+
                     {
                         selector: "edge",
                         style: {
@@ -239,7 +229,18 @@ const GraphQuery = () => {
                             "line-color": "#AAD8FF",
                             "target-arrow-color": "#6774cb",
                             "target-arrow-shape": "triangle",
-                            "curve-style": "bezier"
+                            "curve-style": "bezier",
+                            "text-outline-color": "#555",
+                            "text-outline-width": "1px",
+                            color: "white",
+                            "font-size": "12px"
+                        }
+                    },
+                    {
+                        selector: 'node[type="Job"]',
+                        style: {
+                            //'shape': 'square',
+                            'background-color': '#dd7777'
                         }
                     }
 
