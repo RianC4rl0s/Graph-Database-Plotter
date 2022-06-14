@@ -21,24 +21,32 @@ const GraphQuery = () => {
 
     const [personName, setPersonName] = useState("");
     const createPersonQuery = "CREATE (p:Person {name: $name}) RETURN p"
+    const [jobName, setJobName] = useState("");
+    const createJobQuery = "CREATE (p:Job {name: $name}) RETURN p"
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [createPerson, createPersonResponse] = useLazyWriteCypher(
         createPersonQuery
     )
-    //N RODA
-    // const [createRellQuery,setCreateRellQuery] = useState("match (p:Person) where id(p) = 0 match (p2:Person) where id(p2) = 0 create (p)-[r:meet]->(p2) return p")
-    const [createRellQuery,setCreateRellQuery] = useState("match (p) where id(p) = 0 return p")
-    const createRellQueryTest = "match (p:Person) where id(p) = $n1 match (p2:Person) where id(p2) = $n2 create (p)-[r:meet]->(p2) return p"
-    const [relCreate, realCreateResponse] = useLazyWriteCypher(
-        createRellQueryTest
-    )
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    //const [createRelationship, createRelationshipResponse] = useLazyWriteCypher(
+    const [createJob, createJobResponse] = useLazyWriteCypher(
+        createJobQuery
+    )
+    //N RODA
+    const [createRellQuery, setCreateRellQuery] = useState("match (p) where id(p) = 0 return p")
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const createRelationshipResponse = useWriteCypher(
         createRellQuery
     )
-    
+   
+    const [createRellQueryJob, setCreateRellQueryJob] = useState("match (p) where id(p) = 0 return p")
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const createRelationshipJobResponse = useWriteCypher(
+        createRellQueryJob
+    )
+
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [nodes, setNodes] = useState<Array<Node>>(new Array<Node>());
     const [edges, setEdges] = useState<Array<Edge>>(new Array<Edge>());
@@ -74,7 +82,7 @@ const GraphQuery = () => {
             setEdges(ns);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [test.loading, getRell.loading,createRellQuery])
+    }, [test.loading, getRell.loading])
 
     const [usedCy, setUsedCy] = useState<Core>();
 
@@ -96,10 +104,14 @@ const GraphQuery = () => {
     }, [usedCy]);
     useEffect(() => {
         createRelationshipResponse.run({ createRellQuery })
-        test.run()
-        getRell.run()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [ createRellQuery ])
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [createRellQuery])
+    useEffect(() => {
+        createRelationshipJobResponse.run({ createRellQueryJob })
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [createRellQuery])
     const Graph = useMemo(() => {
         return (
             <CytoscapeComponent
@@ -115,7 +127,7 @@ const GraphQuery = () => {
                         edges: edges
                     })
                 }
-                style={{ margin: "10px 20px 10px 20px", height: '600px', boxShadow: "2px 2px 6px 4px #ddd", backgroundColor: "#dfdfdf" }}
+                style={{ margin: "10px 20px 10px 20px", height: "600px", boxShadow: "2px 2px 6px 4px #ddd", backgroundColor: "#dfdfdf" }}
                 pan={{ x: 200, y: 200 }}
 
 
@@ -204,15 +216,15 @@ const GraphQuery = () => {
             />
         )
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [nodes, edges])
 
 
     return (
-        <div>
+        <div style={{ margin: "10px 20px 10px 20px" }}>
 
 
-            <div className="form">
+            <div style={{ display: "inline-block", width: "25%", float: "left" }}>
                 <h4>Criar Pessoa</h4>
                 <label>Nome</label>
                 <input type="text" value={personName} onChange={(e) => {
@@ -220,13 +232,30 @@ const GraphQuery = () => {
                 }} />
                 <button onClick={(e) => {
                     e.preventDefault()
-                    
+
                     createPerson({ name: personName })
                         .then(res => {
                             //res && setConfirmation(`Node updated at ${res.records[0].get('updatedAt').toString()}`)
                             res && console.log(res.records[0].get('p').properties.name)
                             test.run();
                             setPersonName("")
+                        })
+                        .catch(e => console.log(e))
+                }}>enviar</button>
+                <h4>Criar Trabalho</h4>
+                <label>Nome</label>
+                <input type="text" value={jobName} onChange={(e) => {
+                    setJobName(e.target.value)
+                }} />
+                <button onClick={(e) => {
+                    e.preventDefault()
+
+                    createJob({ name: jobName })
+                        .then(res => {
+                            //res && setConfirmation(`Node updated at ${res.records[0].get('updatedAt').toString()}`)
+                            res && console.log(res.records[0].get('p').properties.name)
+                            test.run();
+                            setJobName("")
                         })
                         .catch(e => console.log(e))
                 }}>enviar</button>
@@ -251,20 +280,48 @@ const GraphQuery = () => {
                 }}></input> */}
                 meet
                 &#93; -&gt; &#40;p2:{relObj2 && relObj2.data.label}&#41;<br />
-                <hr />
-                <button 
-                    onClick={ (e) => {
+
+                <button
+                    onClick={(e) => {
                         setCreateRellQuery(`match (p:Person) where id(p) = ${relObj1?.data.id} match (p2:Person) where id(p2) = ${relObj2?.data.id} create (p)-[r:meet]->(p2) return p`)
                         console.log(relObj1?.data);
                         console.log(relObj2?.data);
+                        if (relObj1?.data.id !== undefined && relObj2?.data.id !== undefined) {
+                            let ns: Array<Edge> = new Array<Edge>();
 
-                       
+                            let n: Edge = { data: { source: relObj1?.data.id, target: relObj2?.data.id, label: "meet" } }
+                            ns = [...edges, n]
+                            setEdges(ns)
+                        }
+
                     }}
-                >Criar Relacionamento</button>
+                >Criar Relacionamento "Conhece"</button>
+
+                <hr />
+                &#40;p:{relObj1 && relObj1.data.label}&#41;- &#91;
+                r:workIn
+                &#93; -&gt; &#40;p2:{relObj2 && relObj2.data.label}&#41;<br />
+                <button
+                    onClick={(e) => {
+                        setCreateRellQueryJob(`match (p) where id(p) = ${relObj1?.data.id} match (p2) where id(p2) = ${relObj2?.data.id} create (p)-[r:meet]->(p2) return p`)
+                        console.log(relObj1?.data);
+                        console.log(relObj2?.data);
+                        if (relObj1?.data.id !== undefined && relObj2?.data.id !== undefined) {
+                            let ns: Array<Edge> = new Array<Edge>();
+
+                            let n: Edge = { data: { source: relObj1?.data.id, target: relObj2?.data.id, label: "workIn" } }
+                            ns = [...edges, n]
+                            setEdges(ns)
+                        }
+
+                    }}
+                >Criar Relacionamento "Trabalha"</button>
+                <hr />
                 <button onClick={() => window.location.reload()}>Recarregar Tabela!</button>
             </div>
-
-            {Graph}
+            <div style={{ display: "inline-block", width: "70%", float: "right" }}>
+                {Graph}
+            </div>
         </div>
     )
 }
