@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { useLazyWriteCypher, useReadCypher } from "use-neo4j"
 import CytoscapeComponent from 'react-cytoscapejs';
 import { Core } from "cytoscape";
@@ -21,6 +21,7 @@ const GraphQuery = () => {
 
     const [personName, setPersonName] = useState("");
     const createPersonQuery = "CREATE (p:Person {name: $name}) RETURN p"
+    //N RODA
     const createRellQuery = "match (p:Person) where id(p) = $id1 match (p2:Person) where id(p2) = $id2 create (p)-[r:$rellType]->(p2) return p,r,p2"
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [createPerson, createPersonResponse] = useLazyWriteCypher(
@@ -75,6 +76,7 @@ const GraphQuery = () => {
         if (usedCy) {
             
             usedCy.on('click', 'node', (e: any) => {
+                e.preventDefault()
                 const node = e.target;
                 console.log(node._private.data)
                 
@@ -85,60 +87,8 @@ const GraphQuery = () => {
         }
     }, [usedCy]);
   
-
-    return (
-        <div>
-
-
-            <div className="form">
-                <h4>Criar Pessoa</h4>
-                <label>Nome</label>
-                <input type="text" value={personName} onChange={(e) => {
-                    setPersonName(e.target.value)
-                }} />
-                <button onClick={(e) => {
-                    e.preventDefault()
-                    createPerson({ name: personName })
-                        .then(res => {
-                            //res && setConfirmation(`Node updated at ${res.records[0].get('updatedAt').toString()}`)
-                            res && console.log(res.records[0].get('p').properties.name)
-                            test.run();
-                            setPersonName("")
-                        })
-                        .catch(e => console.log(e))
-                }}>enviar</button>
-
-                <h4>Criar relação</h4>
-                Pessoa Selecionada : {selectedNode && selectedNode.data.label} <br />
-                <button onClick={
-                    (e) => {
-                        setRelobj1(selectedNode)
-                    }
-                }>Colocar na query como nó 1</button>
-                <button onClick={
-                    (e) => {
-                        setRelobj2(selectedNode)
-                    }
-                }>Colocar na query como nó 2</button><br />
-                <hr/>
-                &#40;p:{relObj1 && relObj1.data.label}&#41;- &#91;
-                r:<input type="text" value={rellType} onChange={(e)=>setRellType(e.target.value)}></input>
-                &#93; -&gt; &#40;p2:{relObj2 && relObj2.data.label}&#41;<br/>
-                <hr/>
-                <button
-                onClick={(e) => {
-                    e.preventDefault()
-                    createRelationship({ id1: relObj1?.data.id,id2:relObj2?.data.id,rellType:rellType })
-                        .then(res => {
-                            //res && setConfirmation(`Node updated at ${res.records[0].get('updatedAt').toString()}`)
-                            res && console.log(res.records[0].get('r').type)
-                            test.run();
-                            
-                        })
-                        .catch(e => console.log(e))
-                }}
-                >Criar Relacionamento</button>
-            </div>
+    const Graph = useMemo(()=>{
+        return (
             <CytoscapeComponent
                 cy={(cy) => {
                     /* this.cy = cy*/
@@ -158,15 +108,8 @@ const GraphQuery = () => {
 
                 layout={{
                     name: 'cose',
-
-                    // Called on `layoutready`
                     ready: function () { },
                     stop: function () { },
-
-                    // Whether to animate while running the layout
-                    // true : Animate continuously as the layout is running
-                    // false : Just show the end result
-                    // 'end' : Animate with the end result, from the initial positions to the end positions
                     animate: true,
                     animationEasing: undefined,
                     animationDuration: 10000,
@@ -246,6 +189,65 @@ const GraphQuery = () => {
 
                 ]}
             />
+        )
+
+    },[nodes,edges])
+
+
+    return (
+        <div>
+
+
+            <div className="form">
+                <h4>Criar Pessoa</h4>
+                <label>Nome</label>
+                <input type="text" value={personName} onChange={(e) => {
+                    setPersonName(e.target.value)
+                }} />
+                <button onClick={(e) => {
+                    e.preventDefault()
+                    createPerson({ name: personName })
+                        .then(res => {
+                            //res && setConfirmation(`Node updated at ${res.records[0].get('updatedAt').toString()}`)
+                            res && console.log(res.records[0].get('p').properties.name)
+                            test.run();
+                            setPersonName("")
+                        })
+                        .catch(e => console.log(e))
+                }}>enviar</button>
+
+                <h4>Criar relação</h4>
+                Pessoa Selecionada : {selectedNode && selectedNode.data.label} <br />
+                <button onClick={
+                    (e) => {
+                        setRelobj1(selectedNode)
+                    }
+                }>Colocar na query como nó 1</button>
+                <button onClick={
+                    (e) => {
+                        setRelobj2(selectedNode)
+                    }
+                }>Colocar na query como nó 2</button><br />
+                <hr/>
+                &#40;p:{relObj1 && relObj1.data.label}&#41;- &#91;
+                r:<input type="text" value={rellType} onChange={(e)=>setRellType(e.target.value)}></input>
+                &#93; -&gt; &#40;p2:{relObj2 && relObj2.data.label}&#41;<br/>
+                <hr/>
+                <button
+                onClick={(e) => {
+                    e.preventDefault()
+                    createRelationship({ id1: relObj1?.data.id,id2:relObj2?.data.id,rellType:rellType })
+                        .then(res => {
+                            //res && setConfirmation(`Node updated at ${res.records[0].get('updatedAt').toString()}`)
+                            res && console.log(res.records[0].get('r').type)
+                            test.run();
+                            
+                        })
+                        .catch(e => console.log(e))
+                }}
+                >Criar Relacionamento</button>
+            </div>
+            {Graph}
         </div>
     )
 }
