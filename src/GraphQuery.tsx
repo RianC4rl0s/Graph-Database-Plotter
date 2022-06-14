@@ -309,7 +309,7 @@ const GraphQuery = () => {
                 &#93; -&gt; &#40;p2:{relObj2 && relObj2.data.label}&#41;<br />
                 <button
                     onClick={(e) => {
-                        setCreateRellQueryJob(`match (p) where id(p) = ${relObj1?.data.id} match (p2) where id(p2) = ${relObj2?.data.id} create (p)-[r:meet]->(p2) return p`)
+                        setCreateRellQueryJob(`match (p) where id(p) = ${relObj1?.data.id} match (p2) where id(p2) = ${relObj2?.data.id} create (p)-[r:job]->(p2) return p`)
                         console.log(relObj1?.data);
                         console.log(relObj2?.data);
                         if (relObj1?.data.id !== undefined && relObj2?.data.id !== undefined) {
