@@ -115,7 +115,7 @@ const GraphQuery = () => {
         createRelationshipJobResponse.run({ createRellQueryJob })
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [createRellQuery])
+    }, [createRellQueryJob])
     const Graph = useMemo(() => {
         return (
             <CytoscapeComponent
