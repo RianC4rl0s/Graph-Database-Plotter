@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react"
-import { useLazyWriteCypher, useReadCypher } from "use-neo4j"
+import { useLazyWriteCypher, useReadCypher, useWriteCypher } from "use-neo4j"
 import CytoscapeComponent from 'react-cytoscapejs';
 import { Core } from "cytoscape";
 
@@ -21,16 +21,20 @@ const GraphQuery = () => {
 
     const [personName, setPersonName] = useState("");
     const createPersonQuery = "CREATE (p:Person {name: $name}) RETURN p"
-    //N RODA
-    const createRellQuery = "match (p:Person) where id(p) = $id1 match (p2:Person) where id(p2) = $id2 create (p)-[r:$rellType]->(p2) return p,r,p2"
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [createPerson, createPersonResponse] = useLazyWriteCypher(
         createPersonQuery
     )
-    const [createRelationship, createRelationshipResponse] =useLazyWriteCypher(
+    //N RODA
+    // const [createRellQuery,setCreateRellQuery] = useState("match (p:Person) where id(p) = 0 match (p2:Person) where id(p2) = 0 create (p)-[r:meet]->(p2) return p")
+    const [createRellQuery,setCreateRellQuery] = useState("match (p) where id(p) = 0 return p")
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    //const [createRelationship, createRelationshipResponse] = useLazyWriteCypher(
+    const createRelationshipResponse = useWriteCypher(
         createRellQuery
     )
-
+    
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [nodes, setNodes] = useState<Array<Node>>(new Array<Node>());
     const [edges, setEdges] = useState<Array<Edge>>(new Array<Edge>());
@@ -39,55 +43,60 @@ const GraphQuery = () => {
 
     const [relObj1, setRelobj1] = useState<Node>()
     const [relObj2, setRelobj2] = useState<Node>()
-    const [rellType,setRellType] = useState<string>("")
+    //const [rellType, setRellType] = useState<string>("")
 
-    
-    
+
+
     useEffect(() => {
         if (test.records) {
             let ns: Array<Node> = new Array<Node>();
-           
+
             for (let i = 0; i < test.records.length; i++) {
                 let n: Node = { data: { id: test.records[i].get('m').identity.low, label: test.records[i].get('m').properties.name, type: test.records[i].get('m').labels[0] },/* position: { x: i * 100 + 100, y: 100 } */ }
-               
+                //console.log(test.records[i].get('m'))
                 ns = [...ns, n];
 
             }
             setNodes(ns)
         }
         if (getRell.records) {
-           
+
             let ns: Array<Edge> = new Array<Edge>();
             for (let i = 0; i < getRell.records.length; i++) {
                 let n: Edge = { data: { source: getRell.records[i].get('r').start.low, target: getRell.records[i].get('r').end.low, label: getRell.records[i].get('r').type } }
-               
+
                 ns = [...ns, n];
             }
             setEdges(ns);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [test.loading, getRell.loading])
+    }, [test.loading, getRell.loading,createRellQuery])
 
-    const [usedCy,setUsedCy] =  useState<Core>();
+    const [usedCy, setUsedCy] = useState<Core>();
 
     //const cyRef = React.useRef<Core>(null);
     useEffect(() => {
-  
+
         if (usedCy) {
-            
+
             usedCy.on('click', 'node', (e: any) => {
                 e.preventDefault()
                 const node = e.target;
                 console.log(node._private.data)
-                
-                let n: Node = { data: { id: node._private.data.label.id, label: node._private.data.label, type: node._private.data.type },/* position: { x: i * 100 + 100, y: 100 } */ }
+
+                let n: Node = { data: { id: node._private.data.id, label: node._private.data.label, type: node._private.data.type },/* position: { x: i * 100 + 100, y: 100 } */ }
                 setSelectedNode(n)
 
             });
         }
     }, [usedCy]);
-  
-    const Graph = useMemo(()=>{
+    useEffect(() => {
+        createRelationshipResponse.run({ createRellQuery })
+        test.run()
+        getRell.run()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ createRellQuery ])
+    const Graph = useMemo(() => {
         return (
             <CytoscapeComponent
                 cy={(cy) => {
@@ -191,7 +200,8 @@ const GraphQuery = () => {
             />
         )
 
-    },[nodes,edges])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [nodes, edges])
 
 
     return (
@@ -206,6 +216,7 @@ const GraphQuery = () => {
                 }} />
                 <button onClick={(e) => {
                     e.preventDefault()
+                    
                     createPerson({ name: personName })
                         .then(res => {
                             //res && setConfirmation(`Node updated at ${res.records[0].get('updatedAt').toString()}`)
@@ -228,25 +239,44 @@ const GraphQuery = () => {
                         setRelobj2(selectedNode)
                     }
                 }>Colocar na query como nó 2</button><br />
-                <hr/>
+                <hr />
                 &#40;p:{relObj1 && relObj1.data.label}&#41;- &#91;
-                r:<input type="text" value={rellType} onChange={(e)=>setRellType(e.target.value)}></input>
-                &#93; -&gt; &#40;p2:{relObj2 && relObj2.data.label}&#41;<br/>
-                <hr/>
-                <button
-                onClick={(e) => {
-                    e.preventDefault()
-                    createRelationship({ id1: relObj1?.data.id,id2:relObj2?.data.id,rellType:rellType })
-                        .then(res => {
-                            //res && setConfirmation(`Node updated at ${res.records[0].get('updatedAt').toString()}`)
-                            res && console.log(res.records[0].get('r').type)
-                            test.run();
-                            
-                        })
-                        .catch(e => console.log(e))
-                }}
+                r:{/*<input type="text" value={rellType} onChange={(e) => {
+                    setRellType(e.target.value)
+
+                }}></input> */}
+                meet
+                &#93; -&gt; &#40;p2:{relObj2 && relObj2.data.label}&#41;<br />
+                <hr />
+                <button 
+                    onClick={ (e) => {
+                        setCreateRellQuery(`match (p:Person) where id(p) = ${relObj1?.data.id} match (p2:Person) where id(p2) = ${relObj2?.data.id} create (p)-[r:meet]->(p2) return p`)
+                        console.log(relObj1?.data);
+                        console.log(relObj2?.data);
+
+                        // await createRelationship()
+                        //     .then(res2 => {
+                        //         console.log("doi")
+                        //         //res2 && console.log(res2.records[0].get('p').properties.name)
+                        //         //res2 && console.log(res2.records[0].get('r').type)
+                        //         //res2 && console.log(res2.records[0].get('p2').properties.name)
+                        //         test.run();
+                        //         getRell.run();
+                               
+
+                                
+                               
+                        //         setRellType("")
+                        //     })
+                        //     .catch(e => {
+                        //         throw e
+                        //     })
+                        //window.location.reload();
+                    }}
                 >Criar Relacionamento</button>
+                <button onClick={() => window.location.reload()}>Recarregar Tabela!</button>
             </div>
+
             {Graph}
         </div>
     )
